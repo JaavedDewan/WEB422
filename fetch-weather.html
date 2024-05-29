@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <!-- *********************************************************************************************
+
+    WEB422 Assignment 1
+
+    I declare that this assignment is my own work in accordance with Seneca Academic Policy.
+    No part of this assignment has been copied manually or electronically from any other source
+    (including web sites) or distributed to other students.
+
+    Name: Jaaved Dewan Student ID: 126045178 Date: May 27th 2024
+
+    ********************************************************************************************* -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather-How</title>
+    <!-- Bootstrap CSS from Bootswatch -->
+    <link href="https://stackpath.bootstrapcdn.com/bootswatch/4.5.2/lux/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    
+    <style>
+        .error {
+            color: red;
+        }
+        .hide {
+            display: none;
+        }
+
+    </style>
+</head>
+<body class="container mt-5">
+    <h1 class="text-center mb-4">Weather-How</h1>
+    <div class="form-group">
+        <input type="text" id="cityName" class="form-control" placeholder="Enter city name or city name,country code.  e.g. Toronto,CA">
+    </div>
+    <button type="button" class="btn btn-primary mb-3" onclick="searchCityWeather()">Search Stats</button>
+    <button type="button" class="btn btn-primary mb-3" onclick="getLocation()">My City Stats</button>
+
+    <p id="errorMessage" class="error"></p>
+    <p id="citySearch"></p>
+    <div id="paginationControls"></div>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-12">
+                <div id="card1" class="card mt-4">
+                    <div class="card-body">
+                        <h2 class="card-title1">City</h2>
+                        <p id="cityDemo1">Info</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-12">
+                <div id="card2" class="card mt-4">
+                    <div class="card-body">
+                        <h2 class="card-title2">City</h2>
+                        <p id="cityDemo2">Info</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-12">
+                <div id="card3" class="card mt-4">
+                    <div class="card-body">
+                        <h2 class="card-title3">City</h2>
+                        <p id="cityDemo3">Info</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-12">
+                <div id="card4" class="card mt-4">
+                    <div class="card-body">
+                        <h2 class="card-title4">City</h2>
+                        <p id="cityDemo4">Info</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-12">
+                <div id="card5" class="card mt-4">
+                    <div class="card-body">
+                        <h2 class="card-title5">City</h2>
+                        <p id="cityDemo5">Info</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const apiKey = 'e338360b67123ba4ddb70ed0ca04fe1d';
+        let cardCount = 1;
+
+        // Function to load the local weather based on user's geolocation
+        function loadLocalWeather(lat, lon) {
+            const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}`;
+            fetch(url)
+                .then(function(res) {
+                    return res.json();
+                })
+                .then(function(data) {
+                    if (data.cod === 200) {
+                        const cityName = data.name;
+                        const temperature = data.main.temp;
+                        const tempHigh = data.main.temp_max;
+                        const tempLow = data.main.temp_min;
+                        const countryCode = data.sys.country;
+                        const windSpeed = data.wind.speed;
+                        const clouds = data.clouds.all;
+                        const pressure = data.main.pressure;
+                        const humidity = data.main.humidity
+                        const sunrise = data.sys.sunrise
+                        const sunset = data.sys.sunset
+                        const sunriseDate = new Date(sunrise*1000)
+                        const sunriseTime = sunriseDate.toLocaleString();
+                        const sunsetDate = new Date(sunset*1000)
+                        const sunsetTime = sunsetDate.toLocaleString();
+                        const timezoneCode = data.timezone
+                        const weatherDescription = capitalizeWords(data.weather[0].description);
+                        const countryFlag = `http://openweathermap.org/images/flags/${countryCode.toLowerCase()}.png`;
+                        const weatherInfo = `
+                        <p><img src="${countryFlag}" alt="${countryCode}" class="flag-img"> ${countryCode}</p>
+                        <p>Weather: ${weatherDescription} | Temperature: ${Math.round(temperature - 273.15)} &degC |
+                            High: ${Math.round(tempHigh - 273.15)} &degC  | Low: ${Math.round(tempLow - 273.15)} &degC</p>
+                        <p>Humidity: ${humidity}% | Wind: ${Math.round(windSpeed*3.6)} km/h | Clouds Percent: ${clouds}% | Pressure: ${pressure} hpa</p>
+                        <p>Timezone: ${Math.round(timezoneCode/3600)}:00 | Sunrise: ${sunriseTime} | Sunset: ${sunsetTime}</p>`;
+                        if(cardCount === 1){
+                            document.getElementById(`card1`).querySelector(`.card-title1`).innerText = cityName;
+                            document.getElementById(`cityDemo1`).innerHTML = weatherInfo;
+                        }
+                        else{
+                            // Shift information from previous card to the current card
+                            for (let i = cardCount; i > 1; i--) {
+                                const currentCard = document.getElementById(`card${i}`);
+                                const previousCard = document.getElementById(`card${i - 1}`);
+                                currentCard.querySelector(`.card-title${i}`).innerText = previousCard.querySelector(`.card-title${i - 1}`).innerText;
+                                document.getElementById(`cityDemo${i}`).innerHTML = document.getElementById(`cityDemo${i - 1}`).innerHTML;
+                            }
+                                
+                            // Update card1 with new data
+                            document.getElementById('card1').querySelector('.card-title1').innerText = cityName;
+                            document.getElementById('cityDemo1').innerHTML = weatherInfo;
+                        }
+                        // Increment cardCount unless it's already at the max (5)
+                        if (cardCount < 5) {
+                            cardCount++;
+                        }
+                    } else {
+                        document.getElementById('errorMessage').innerHTML = `Error: ${data.message}`;
+                    }
+                })
+                .catch(function(error) {
+                    console.log('Error fetching data:', error);
+                    document.getElementById('errorMessage').innerHTML = 'Error fetching data';
+                });
+            }
+
+        //Load Weather Function
+        function loadWeather(url, elementId) {
+            fetch(url)
+                .then(function(res) {
+                    return res.json();
+                })
+                .then(function(data) {
+                    if (data.cod === 200) {
+                        const cityName = data.name;
+                        const temperature = data.main.temp;
+                        const tempHigh = data.main.temp_max;
+                        const tempLow = data.main.temp_min;
+                        const countryCode = data.sys.country;
+                        const windSpeed = data.wind.speed;
+                        const clouds = data.clouds.all;
+                        const pressure = data.main.pressure;
+                        const humidity = data.main.humidity
+                        const sunrise = data.sys.sunrise
+                        const sunset = data.sys.sunset
+                        const sunriseDate = new Date(sunrise*1000)
+                        const sunriseTime = sunriseDate.toLocaleString();
+                        const sunsetDate = new Date(sunset*1000)
+                        const sunsetTime = sunsetDate.toLocaleString();
+                        const timezoneCode = data.timezone;
+                        const weatherDescription = capitalizeWords(data.weather[0].description);
+                        const countryFlag = `http://openweathermap.org/images/flags/${countryCode.toLowerCase()}.png`;
+                        const weatherInfo = `
+                        <p><img src="${countryFlag}" alt="${countryCode}" class="flag-img"> ${countryCode}</p>
+                        <p>Weather: ${weatherDescription} | Temperature: ${Math.round(temperature - 273.15)} &degC |
+                            High: ${Math.round(tempHigh - 273.15)} &degC  | Low: ${Math.round(tempLow - 273.15)} &degC</p>
+                        <p>Humidity: ${humidity}% | Wind: ${Math.round(windSpeed*3.6)} km/h | Clouds Percent: ${clouds}% | Pressure: ${pressure} hpa</p>
+                        <p>Timezone: ${Math.round(timezoneCode/3600)}:00 | Sunrise: ${sunriseTime} | Sunset: ${sunsetTime}</p>`;
+                        if(cardCount === 1){
+                            document.getElementById(`card1`).querySelector(`.card-title1`).innerText = cityName;
+                            document.getElementById(`cityDemo1`).innerHTML = weatherInfo;
+                        }
+                        else{
+                            // Shift information from previous card to the current card
+                            for (let i = cardCount; i > 1; i--) {
+                                const currentCard = document.getElementById(`card${i}`);
+                                const previousCard = document.getElementById(`card${i - 1}`);
+                                currentCard.querySelector(`.card-title${i}`).innerText = previousCard.querySelector(`.card-title${i - 1}`).innerText;
+                                document.getElementById(`cityDemo${i}`).innerHTML = document.getElementById(`cityDemo${i - 1}`).innerHTML;
+                            }
+                            
+                            // Update card1 with new data
+                            document.getElementById('card1').querySelector('.card-title1').innerText = cityName;
+                            document.getElementById('cityDemo1').innerHTML = weatherInfo;
+                        }
+                        // Increment cardCount unless it's already at the max (5)
+                        if (cardCount < 5) {
+                            cardCount++;
+                        }
+                    } else {
+                        document.getElementById('errorMessage').innerHTML = `Error: ${data.message}`;
+                        document.getElementById(elementId).innerHTML = ''; // Clear the card's content
+                    }
+                })
+                .catch(function(error) {
+                    console.log('Error fetching data:', error);
+                    document.getElementById('errorMessage').innerHTML = 'Error fetching data';
+                    document.getElementById(elementId).innerHTML = ''; // Clear the card's content
+                });
+            }
+
+        function normalizeInput(input) {
+                //Changes input to lower case and removes any spacing
+                return input.trim().toLowerCase().replace(/\s*,\s*/g, ',');
+        }
+
+        let currentPage = 1;
+        const itemsPerPage = 3;
+        let searchResults = [];
+
+        function searchCityWeather() {
+            const input = document.getElementById('cityName').value;
+            const normalizedInput = normalizeInput(input);
+            const citySearch = document.getElementById('citySearch');
+            const paginationControls = document.getElementById('paginationControls');
+
+            // Hide pagination buttons initially
+            paginationControls.innerHTML = '';
+
+            if (normalizedInput) {
+                const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${normalizedInput}&limit=5&appid=${apiKey}`;
+                fetch(geoUrl)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.length === 1) {
+                            const { name, country, state, lat, lon } = data[0];
+                            getWeather(lat, lon);
+                            document.getElementById('errorMessage').innerHTML = '';
+                        } else if (data.length > 1) {
+                            searchResults = data;
+                            currentPage = 1; // Reset to first page
+                            displayResults();
+                            document.getElementById('errorMessage').innerHTML = '';
+                        } else {
+                            document.getElementById('errorMessage').innerHTML = 'No matching cities found';
+                        }
+                    })
+                    .catch(error => {
+                        console.log('Error fetching data:', error);
+                        document.getElementById('errorMessage').innerHTML = 'Error fetching data';
+                    });
+            } else {
+                document.getElementById('errorMessage').innerHTML = 'Please enter a city name or city name,country code!';
+            }
+        }
+
+        function displayResults() {
+            const citySearch = document.getElementById('citySearch');
+            const paginationControls = document.getElementById('paginationControls');
+
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = Math.min(startIndex + itemsPerPage, searchResults.length);
+            const citiesToShow = searchResults.slice(startIndex, endIndex);
+
+            let cityList = '<h3>Matching Cities</h3>';
+            citiesToShow.forEach(city => {
+                const { name, country, state, lat, lon } = city;
+                cityList += `<p>${name}, ${state || ''}, ${country} - <button class="btn btn-info btn-sm" onclick="getWeather(${lat}, ${lon})">Get Weather</button></p>`;
+            });
+
+            citySearch.innerHTML = cityList;
+
+            const totalPages = Math.ceil(searchResults.length / itemsPerPage);
+
+            let paginationHtml = `
+                <nav aria-label="Page navigation" class="pagination-nav">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                            <a class="page-link" href="#" onclick="previousPage()">Previous</a>
+                        </li>`;
+
+            for (let i = 1; i <= totalPages; i++) {
+                paginationHtml += `
+                        <li class="page-item ${currentPage === i ? 'active' : ''}">
+                            <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+                        </li>`;
+            }
+
+            paginationHtml += `
+                        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                            <a class="page-link" href="#" onclick="nextPage()">Next</a>
+                        </li>
+                    </ul>
+                </nav>`;
+
+            paginationControls.innerHTML = paginationHtml;
+        }
+
+        function previousPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                displayResults();
+            }
+        }
+
+        function nextPage() {
+            const totalPages = Math.ceil(searchResults.length / itemsPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                displayResults();
+            }
+        }
+
+        function changePage(pageNumber) {
+            currentPage = pageNumber;
+            displayResults();
+        }
+
+        //Changes country code to upper case.
+        function capitalizeWords(str) {
+            return str.replace(/\b\w/g, char => char.toUpperCase());
+        }
+        
+        function getWeather(lat, lon) {
+            const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}`;
+            loadWeather(url, `card${cardCount}`);
+        }
+               
+            //Gets location of user once the application is started.
+            function getLocation() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function(position) {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+                        loadLocalWeather(lat, lon);
+                    }, function(error) {
+                        console.log('Error getting location:', error);
+                    });
+                } else {
+                    console.log('Geolocation is not supported by this browser.');
+                }
+            }
+                
+            // Get the current location and weather when the app starts
+            window.onload = function() {
+                getLocation();
+            };
+                
+            // Allow pressing "Enter" to start the search
+            document.getElementById('cityName').addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    searchCityWeather();
+                }
+            });
+    </script>
+    <footer>By Jaaved Dewan</footer>
+</body>
+</html>
+        
